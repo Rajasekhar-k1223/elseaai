@@ -1,7 +1,10 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
 
 from app.api.v1 import auth, chat, documents
+from app.core.config import settings
+from app.core.middleware import AuditLoggingMiddleware
 from app.db.database import engine, Base
 from app.db.mongodb import connect_to_mongo, close_mongo_connection
 from contextlib import asynccontextmanager
@@ -24,13 +27,10 @@ app = FastAPI(
     lifespan=lifespan
 )
 
-from fastapi.middleware.cors import CORSMiddleware
-from app.core.middleware import AuditLoggingMiddleware
-
 app.add_middleware(AuditLoggingMiddleware)
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"], # In production, restrict this to frontend URL
+    allow_origins=[origin.strip() for origin in settings.BACKEND_CORS_ORIGINS.split(",") if origin.strip()],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -43,3 +43,5 @@ async def health_check():
 app.include_router(auth.router, prefix="/api/v1/auth", tags=["Auth"])
 app.include_router(chat.router, prefix="/api/v1/chat", tags=["Chat"])
 app.include_router(documents.router, prefix="/api/v1/documents", tags=["Documents"])
+
+app.mount("/storage", StaticFiles(directory="/app/storage"), name="storage")

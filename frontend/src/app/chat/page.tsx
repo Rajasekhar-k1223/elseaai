@@ -10,15 +10,66 @@ export default function ChatPage() {
   const [input, setInput] = useState("");
   const [model, setModel] = useState("llama3.2");
 
-  const handleSend = () => {
+  const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+
+  const handleSend = async () => {
     if (!input.trim()) return;
-    setMessages([...messages, { role: "user", content: input }]);
+    
+    const userMessage = input;
+    setMessages([...messages, { role: "user", content: userMessage }]);
     setInput("");
     
-    // Simulate streaming response
-    setTimeout(() => {
-      setMessages((prev) => [...prev, { role: "assistant", content: "This is a simulated response. The real backend will stream Ollama output here." }]);
-    }, 1000);
+    const token = localStorage.getItem("elseaToken");
+    if (!token) {
+      setMessages((prev) => [...prev, { role: "assistant", content: "Error: Please sign in first to use the AI assistant." }]);
+      return;
+    }
+
+    try {
+      setMessages((prev) => [...prev, { role: "assistant", content: "" }]);
+
+      const response = await fetch(`${apiUrl}/api/v1/chat/stream`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${token}`
+        },
+        body: JSON.stringify({
+          message: userMessage,
+          model: model
+        })
+      });
+
+      if (!response.ok) {
+        const errData = await response.json().catch(() => ({}));
+        throw new Error(errData.detail || `HTTP Error ${response.status}`);
+      }
+
+      if (!response.body) throw new Error("Streaming not supported in this browser.");
+      
+      const reader = response.body.getReader();
+      const decoder = new TextDecoder("utf-8");
+
+      let done = false;
+      while (!done) {
+        const { value, done: readerDone } = await reader.read();
+        done = readerDone;
+        if (value) {
+          const chunk = decoder.decode(value, { stream: true });
+          setMessages((prev) => {
+            const newMessages = [...prev];
+            newMessages[newMessages.length - 1].content += chunk;
+            return newMessages;
+          });
+        }
+      }
+    } catch (error) {
+      setMessages((prev) => {
+        const newMessages = [...prev];
+        newMessages[newMessages.length - 1].content += `\n[Request Failed: ${error}]`;
+        return newMessages;
+      });
+    }
   };
 
   return (
@@ -36,8 +87,9 @@ export default function ChatPage() {
             onChange={(e) => setModel(e.target.value)}
           >
             <option value="llama3.2">Llama 3.2</option>
-            <option value="qwen2.5">Qwen 2.5</option>
+            <option value="qwen2.5:0.5b">Qwen 2.5 (Fast)</option>
             <option value="deepseek">Deepseek Coder</option>
+            <option value="custom">Custom AI Server</option>
           </select>
           <button className="p-1.5 hover:bg-slate-800 rounded-lg transition-colors">
             <Settings2 className="w-5 h-5 text-slate-400" />

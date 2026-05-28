@@ -2,6 +2,7 @@ from sqlalchemy import Column, Integer, String, Boolean, ForeignKey, DateTime
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
 from app.db.database import Base
+from app.models.document import DocumentMetadata
 
 class Role(Base):
     __tablename__ = "roles"
@@ -26,3 +27,4 @@ class User(Base):
     updated_at = Column(DateTime(timezone=True), onupdate=func.now())
 
     role = relationship("Role", back_populates="users")
+    documents = relationship(DocumentMetadata, back_populates="user")

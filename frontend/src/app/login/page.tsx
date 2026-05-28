@@ -1,16 +1,45 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import { Shield } from "lucide-react";
 
 export default function LoginPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
+  const router = useRouter();
+
+  const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
 
   const handleLogin = (e: React.FormEvent) => {
     e.preventDefault();
-    // Simulate login
-    window.location.href = "/";
+    setLoading(true);
+    setError("");
+
+    fetch(`${apiUrl}/api/v1/auth/token`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/x-www-form-urlencoded",
+      },
+      body: new URLSearchParams({ username: email, password }),
+    })
+      .then(async (response) => {
+        if (!response.ok) {
+          const result = await response.json();
+          throw new Error(result.detail || "Login failed.");
+        }
+        return response.json();
+      })
+      .then((data) => {
+        localStorage.setItem("elseaToken", data.access_token);
+        router.push("/documents");
+      })
+      .catch((err) => {
+        setError(err.message || "Unable to authenticate.");
+      })
+      .finally(() => setLoading(false));
   };
 
   return (
@@ -26,6 +55,9 @@ export default function LoginPage() {
         </h2>
         <p className="mt-2 text-center text-sm text-slate-400">
           Enterprise Local AI Platform
+        </p>
+        <p className="mt-3 text-center text-sm text-slate-500">
+          Default credentials: <strong>admin@elsea.ai</strong> / <strong>AdminPass123!</strong>
         </p>
       </div>
 
@@ -64,7 +96,7 @@ export default function LoginPage() {
               </div>
             </div>
 
-            <div className="flex items-center justify-between">
+            <div className="flex flex-col gap-4">
               <div className="flex items-center">
                 <input
                   id="remember-me"
@@ -83,6 +115,8 @@ export default function LoginPage() {
                 </a>
               </div>
             </div>
+
+            {error && <p className="text-sm text-red-400">{error}</p>}
 
             <div>
               <button

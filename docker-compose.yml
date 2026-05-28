@@ -1,8 +1,147 @@
-version: '3.8'
+# services:
+#   frontend:
+#     build: 
+#       context: ./frontend
+#       dockerfile: Dockerfile
+#     ports:
+#       - "3000:3000"
+#     environment:
+#       - NEXT_PUBLIC_API_URL=http://localhost:8000
+#     depends_on:
+#       - backend
+#     networks:
+#       - elsea_network
 
+#   backend:
+#     build:
+#       context: ./backend
+#       dockerfile: Dockerfile
+#     ports:
+#       - "8000:8000"
+#     environment:
+#       - MYSQL_URL=${MYSQL_URL:-mysql+aiomysql://user:change_me_to_a_strong_password@mysql:3306/elsea_db}
+#       - MONGO_URL=${MONGO_URL:-mongodb://user:change_me_to_a_strong_password@mongodb:27017/elsea_db?authSource=admin}
+#       - QDRANT_URL=${QDRANT_URL:-http://qdrant:6333}
+#       - REDIS_URL=${REDIS_URL:-redis://redis:6379/0}
+#       - OLLAMA_URL=${OLLAMA_URL:-http://host.docker.internal:11434}
+#       - JWT_SECRET=${JWT_SECRET:-change_me_to_a_strong_secret}
+#       - JWT_ALGORITHM=${JWT_ALGORITHM:-HS256}
+#       - ACCESS_TOKEN_EXPIRE_MINUTES=${ACCESS_TOKEN_EXPIRE_MINUTES:-1440}
+#       - BACKEND_CORS_ORIGINS=${BACKEND_CORS_ORIGINS:-http://localhost:3000}
+#       - SQLALCHEMY_ECHO=${SQLALCHEMY_ECHO:-false}
+#     depends_on:
+#       mysql:
+#         condition: service_healthy
+#       mongodb:
+#         condition: service_healthy
+#       qdrant:
+#         condition: service_healthy
+#       redis:
+#         condition: service_healthy
+#     extra_hosts:
+#       - "host.docker.internal:host-gateway"
+#     networks:
+#       - elsea_network
+
+#   celery-worker:
+#     build:
+#       context: ./backend
+#       dockerfile: Dockerfile
+#     command: celery -A app.worker.celery_app worker --loglevel=info
+#     environment:
+#       - MYSQL_URL=${MYSQL_URL:-mysql+aiomysql://user:change_me_to_a_strong_password@mysql:3306/elsea_db}
+#       - MONGO_URL=${MONGO_URL:-mongodb://user:change_me_to_a_strong_password@mongodb:27017/elsea_db?authSource=admin}
+#       - QDRANT_URL=${QDRANT_URL:-http://qdrant:6333}
+#       - REDIS_URL=${REDIS_URL:-redis://redis:6379/0}
+#       - OLLAMA_URL=${OLLAMA_URL:-http://host.docker.internal:11434}
+#     depends_on:
+#       - backend
+#       - redis
+#     extra_hosts:
+#       - "host.docker.internal:host-gateway"
+#     networks:
+#       - elsea_network
+
+#   mysql:
+#     image: mysql:8.0
+#     restart: always
+#     environment:
+#       MYSQL_DATABASE: elsea_db
+#       MYSQL_USER: elsea
+#       MYSQL_PASSWORD: ${MYSQL_PASSWORD:-change_me_to_a_strong_password}
+#       MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-change_me_to_a_strong_root_password}
+#     ports:
+#       - "3306:3306"
+#     volumes:
+#       - mysql_data:/var/lib/mysql
+#     networks:
+#       - elsea_network
+#     healthcheck:
+#       test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+#       timeout: 20s
+#       retries: 10
+
+#   mongodb:
+#     image: mongo:6.0
+#     restart: always
+#     environment:
+#       MONGO_INITDB_ROOT_USERNAME: elsea
+#       MONGO_INITDB_ROOT_PASSWORD: ${MONGO_INITDB_ROOT_PASSWORD:-change_me_to_a_strong_password}
+#       MONGO_INITDB_DATABASE: elsea_db
+#     # No host port mapping to avoid conflicts with host services.
+#     # Container will still be reachable from other services via the Docker network `mongodb:27017`.
+#     volumes:
+#       - mongo_data:/data/db
+#     networks:
+#       - elsea_network
+#     healthcheck:
+#       test: ["CMD", "mongo", "--eval", "db.adminCommand('ping')"]
+#       interval: 10s
+#       timeout: 10s
+#       retries: 5
+
+#   qdrant:
+#     image: qdrant/qdrant:latest
+#     restart: always
+#     # No host port mapping to avoid conflicts with host services.
+#     # Qdrant remains accessible to other containers at qdrant:6333 and qdrant:6334.
+#     volumes:
+#       - qdrant_data:/qdrant/storage
+#     networks:
+#       - elsea_network
+#     healthcheck:
+#       test: ["CMD-SHELL", "curl -f http://localhost:6333/health || exit 1"]
+#       interval: 10s
+#       timeout: 10s
+#       retries: 5
+
+#   redis:
+#     image: redis:7-alpine
+#     restart: always
+#     ports:
+#       - "6379:6379"
+#     volumes:
+#       - redis_data:/data
+#     networks:
+#       - elsea_network
+#     healthcheck:
+#       test: ["CMD", "redis-cli", "ping"]
+#       interval: 10s
+#       timeout: 10s
+#       retries: 5
+
+# networks:
+#   elsea_network:
+#     driver: bridge
+
+# volumes:
+#   mysql_data:
+#   mongo_data:
+#   qdrant_data:
+#   redis_data:
 services:
   frontend:
-    build: 
+    build:
       context: ./frontend
       dockerfile: Dockerfile
     ports:
@@ -21,21 +160,28 @@ services:
     ports:
       - "8000:8000"
     environment:
-      - MYSQL_URL=mysql+aiomysql://elsea:elseapassword@mysql:3306/elsea_db
-      - MONGO_URL=mongodb://elsea:elseapassword@mongodb:27017/elsea_db?authSource=admin
+      - MYSQL_URL=mysql+aiomysql://elsea:change_me_to_a_strong_password@mysql:3306/elsea_db
+      - MONGO_URL=mongodb://elsea:change_me_to_a_strong_password@mongodb:27017/elsea_db?authSource=admin
       - QDRANT_URL=http://qdrant:6333
       - REDIS_URL=redis://redis:6379/0
-      - OLLAMA_URL=http://host.docker.internal:11434
-      - JWT_SECRET=supersecretjwtkey_change_in_production
+      - OLLAMA_URL=http://ollama:11434
+      - GROQ_API_KEY=${GROQ_API_KEY}
+      - JWT_SECRET=change_me_to_a_strong_secret_that_is_32_bytes_long
+      - JWT_ALGORITHM=HS256
+      - ACCESS_TOKEN_EXPIRE_MINUTES=1440
+      - BACKEND_CORS_ORIGINS=http://localhost:3000,http://127.0.0.1:3000
+      - SQLALCHEMY_ECHO=false
+    volumes:
+      - backend_storage:/app/storage
     depends_on:
       mysql:
         condition: service_healthy
       mongodb:
-        condition: service_started
+        condition: service_healthy
       qdrant:
-        condition: service_started
+        condition: service_healthy
       redis:
-        condition: service_started
+        condition: service_healthy
     extra_hosts:
       - "host.docker.internal:host-gateway"
     networks:
@@ -47,14 +193,24 @@ services:
       dockerfile: Dockerfile
     command: celery -A app.worker.celery_app worker --loglevel=info
     environment:
-      - MYSQL_URL=mysql+aiomysql://elsea:elseapassword@mysql:3306/elsea_db
-      - MONGO_URL=mongodb://elsea:elseapassword@mongodb:27017/elsea_db?authSource=admin
-      - QDRANT_URL=http://qdrant:6333
-      - REDIS_URL=redis://redis:6379/0
-      - OLLAMA_URL=http://host.docker.internal:11434
+      - MYSQL_URL=${MYSQL_URL:-mysql+aiomysql://elsea:change_me_to_a_strong_password@mysql:3306/elsea_db}
+      - MONGO_URL=${MONGO_URL:-mongodb://elsea:change_me_to_a_strong_password@mongodb:27017/elsea_db?authSource=admin}
+      - QDRANT_URL=${QDRANT_URL:-http://qdrant:6333}
+      - REDIS_URL=${REDIS_URL:-redis://redis:6379/0}
+      - OLLAMA_URL=${OLLAMA_URL:-http://ollama:11434}
+    volumes:
+      - backend_storage:/app/storage
     depends_on:
-      - backend
-      - redis
+      backend:
+        condition: service_started
+      redis:
+        condition: service_healthy
+      mongodb:
+        condition: service_healthy
+      qdrant:
+        condition: service_healthy
+      mysql:
+        condition: service_healthy
     extra_hosts:
       - "host.docker.internal:host-gateway"
     networks:
@@ -66,8 +222,8 @@ services:
     environment:
       MYSQL_DATABASE: elsea_db
       MYSQL_USER: elsea
-      MYSQL_PASSWORD: elseapassword
-      MYSQL_ROOT_PASSWORD: rootpassword
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD:-change_me_to_a_strong_password}
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-change_me_to_a_strong_root_password}
     ports:
       - "3306:3306"
     volumes:
@@ -75,8 +231,9 @@ services:
     networks:
       - elsea_network
     healthcheck:
-      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
-      timeout: 20s
+      test: ["CMD-SHELL", "mysqladmin ping -h localhost -u root -p$${MYSQL_ROOT_PASSWORD} || exit 1"]
+      interval: 10s
+      timeout: 10s
       retries: 10
 
   mongodb:
@@ -84,25 +241,30 @@ services:
     restart: always
     environment:
       MONGO_INITDB_ROOT_USERNAME: elsea
-      MONGO_INITDB_ROOT_PASSWORD: elseapassword
+      MONGO_INITDB_ROOT_PASSWORD: ${MONGO_INITDB_ROOT_PASSWORD:-change_me_to_a_strong_password}
       MONGO_INITDB_DATABASE: elsea_db
-    ports:
-      - "27017:27017"
     volumes:
       - mongo_data:/data/db
     networks:
       - elsea_network
+    healthcheck:
+      test: ["CMD-SHELL", "mongosh --username elsea --password $${MONGO_INITDB_ROOT_PASSWORD} --authenticationDatabase admin --eval 'db.adminCommand(\"ping\")' || exit 1"]
+      interval: 10s
+      timeout: 10s
+      retries: 10
 
   qdrant:
     image: qdrant/qdrant:latest
     restart: always
-    ports:
-      - "6333:6333"
-      - "6334:6334"
     volumes:
       - qdrant_data:/qdrant/storage
     networks:
       - elsea_network
+    healthcheck:
+      test: ["CMD-SHELL", "timeout 3 bash -c '</dev/tcp/localhost/6333' || exit 1"]
+      interval: 10s
+      timeout: 10s
+      retries: 10
 
   redis:
     image: redis:7-alpine
@@ -113,6 +275,33 @@ services:
       - redis_data:/data
     networks:
       - elsea_network
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 10s
+      retries: 10
+
+  ollama:
+    image: ollama/ollama:latest
+    restart: always
+    ports:
+      - "11434:11434"
+    volumes:
+      - ollama_data:/root/.ollama
+    networks:
+      - elsea_network
+    # ---------------------------------------------------------
+    # UNCOMMENT THE BLOCK BELOW TO ENABLE GPU (NVIDIA ONLY)
+    # WARNING: This will crash if you don't have an NVIDIA GPU
+    # configured properly with Docker Desktop.
+    # ---------------------------------------------------------
+    # deploy:
+    #   resources:
+    #     reservations:
+    #       devices:
+    #         - driver: nvidia
+    #           count: 1
+    #           capabilities: [gpu]
 
 networks:
   elsea_network:
@@ -123,3 +312,5 @@ volumes:
   mongo_data:
   qdrant_data:
   redis_data:
+  backend_storage:
+  ollama_data:

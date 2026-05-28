@@ -3,7 +3,9 @@ from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
 from typing import List, Optional
 
-from app.ai.ollama import ollama_client
+from app.ai.ollama import llm_client
+from app.ai.embeddings import embedding_client
+from app.ai.rag import rag_service
 from app.api.deps import get_current_user
 from app.models.user import User
 from app.db.mongodb import mongodb
@@ -60,9 +62,29 @@ async def chat_stream(request: ChatRequest, current_user: User = Depends(get_cur
     # Prepare for Ollama (strip timestamp)
     ollama_messages = [{"role": m["role"], "content": m["content"]} for m in messages_history]
 
+    # --- RAG Retrieval ---
+    try:
+        query_embedding = await embedding_client.generate_embedding(request.message)
+        context_chunks = await rag_service.retrieve_context(query_embedding, limit=3)
+        if context_chunks:
+            context_str = "\n\n---\n\n".join(context_chunks)
+            system_prompt = (
+                f"You are ElseaAI, an enterprise AI assistant. Use the following retrieved document context "
+                f"to answer the user's question accurately. If the context does not contain the answer, "
+                f"say so.\n\nContext:\n{context_str}"
+            )
+            
+            if ollama_messages and ollama_messages[0]["role"] != "system":
+                ollama_messages.insert(0, {"role": "system", "content": system_prompt})
+            elif ollama_messages and ollama_messages[0]["role"] == "system":
+                ollama_messages[0]["content"] += f"\n\nContext for current query:\n{context_str}"
+    except Exception as e:
+        print(f"RAG Retrieval failed: {e}")
+    # ---------------------
+
     async def stream_and_save():
         full_response = ""
-        async for chunk in ollama_client.chat_stream(messages=ollama_messages, model=request.model):
+        async for chunk in llm_client.chat_stream(messages=ollama_messages, model=request.model):
             full_response += chunk
             yield chunk
             

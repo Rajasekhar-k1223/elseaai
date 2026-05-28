@@ -1,6 +1,7 @@
 import os
 from datetime import datetime, timedelta
 from passlib.context import CryptContext
+from passlib.exc import UnknownHashError
 import jwt
 
 SECRET_KEY = os.environ.get("JWT_SECRET", "supersecretjwtkey_change_in_production")
@@ -10,7 +11,14 @@ ACCESS_TOKEN_EXPIRE_MINUTES = int(os.environ.get("ACCESS_TOKEN_EXPIRE_MINUTES", 
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
 def verify_password(plain_password, hashed_password):
-    return pwd_context.verify(plain_password, hashed_password)
+    if not hashed_password:
+        return False
+    try:
+        return pwd_context.verify(plain_password, hashed_password)
+    except UnknownHashError:
+        return False
+    except Exception:
+        return False
 
 def get_password_hash(password):
     return pwd_context.hash(password)

@@ -1,0 +1,6 @@
+Patient Name: John Doe
+DOB: 01/01/1970
+Subjective: Patient reports mild chest pain over the last 2 days.
+Objective: Vitals stable. ECG normal.
+Assessment: Possible angina. Recommend follow-up and troponin labs.
+Plan: Schedule cardiology consult. Start aspirin.

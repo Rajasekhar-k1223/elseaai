@@ -30,12 +30,12 @@ class RAGService:
         )
 
     async def retrieve_context(self, query_embedding: list[float], limit: int = 3) -> list[str]:
-        search_result = await self.qdrant.search(
+        search_result = await self.qdrant.query_points(
             collection_name=self.collection_name,
-            query_vector=query_embedding,
+            query=query_embedding,
             limit=limit
         )
-        contexts = [hit.payload["text"] for hit in search_result if hit.payload and "text" in hit.payload]
+        contexts = [hit.payload["text"] for hit in search_result.points if hit.payload and "text" in hit.payload]
         return contexts
 
 rag_service = RAGService()

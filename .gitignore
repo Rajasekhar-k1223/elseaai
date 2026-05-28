@@ -49,3 +49,6 @@ backend/data/
 # OS
 .DS_Store
 Thumbs.db
+
+backend_build.log
+michael_johnson.txt
