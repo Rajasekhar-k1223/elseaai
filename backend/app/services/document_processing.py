@@ -165,12 +165,26 @@ class DocumentProcessingService:
         with open(path, "w", encoding="utf-8") as output_file:
             if sections and len(sections) > 1:
                 for section in sections:
-                    prompt = f"Summarize the following medical section titled {section['title']}:"
-                    completion = section["text"].strip()
-                    if completion:
-                        output_file.write(json.dumps({"prompt": prompt, "completion": completion}) + "\n")
+                    title = section.get("title", "General")
+                    text = section.get("text", "").strip()
+                    if text:
+                        conversation = {
+                            "messages": [
+                                {"role": "system", "content": "You are a helpful medical assistant."},
+                                {"role": "user", "content": f"Summarize the following medical section titled {title}:"},
+                                {"role": "assistant", "content": text}
+                            ]
+                        }
+                        output_file.write(json.dumps(conversation) + "\n")
             else:
-                output_file.write(json.dumps({"prompt": "Summarize the following medical document:", "completion": cleaned_text.strip()}) + "\n")
+                conversation = {
+                    "messages": [
+                        {"role": "system", "content": "You are a helpful medical assistant."},
+                        {"role": "user", "content": "Summarize the following medical document:"},
+                        {"role": "assistant", "content": cleaned_text.strip()}
+                    ]
+                }
+                output_file.write(json.dumps(conversation) + "\n")
 
         return path
 

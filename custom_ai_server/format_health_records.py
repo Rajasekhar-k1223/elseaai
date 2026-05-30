@@ -15,15 +15,48 @@ def format_csv_to_jsonl(input_csv, output_jsonl):
     formatted_data = []
     
     with open(input_csv, mode='r', encoding='utf-8') as csv_file:
-        reader = csv.DictReader(csv_file)
+        # Read the first line to analyze headers
+        reader = csv.reader(csv_file)
+        headers = next(reader, None)
+        if not headers:
+            print(f"Error: {input_csv} is empty.")
+            return
+            
+        # Helper to find column matching aliases
+        def find_column(headers, aliases):
+            for alias in aliases:
+                for header in headers:
+                    h_norm = header.lower().strip().replace('_', ' ').replace('-', ' ')
+                    a_norm = alias.lower().strip().replace('_', ' ').replace('-', ' ')
+                    if h_norm == a_norm:
+                        return header
+            return None
+
+        # Robust mapping
+        symptoms_col = find_column(headers, ['patient_symptoms', 'patient symptoms', 'symptoms', 'symptom', 'description', 'patient_presentation', 'symptom_description'])
+        diagnosis_col = find_column(headers, ['diagnosis', 'potential_diagnosis', 'potential diagnosis', 'disease', 'condition', 'assessment'])
+        treatment_col = find_column(headers, ['treatment', 'treatment_plan', 'treatment plan', 'recommended_treatment', 'recommended treatment', 'recommendation', 'recommendations', 'plan'])
+
+        # Fallbacks if columns are not perfectly matched
+        if not symptoms_col or not diagnosis_col or not treatment_col:
+            print(f"Note: Some columns did not map exactly. Attempting auto-detection among headers: {headers}")
+            symptoms_col = symptoms_col or (headers[0] if len(headers) > 0 else 'patient_symptoms')
+            diagnosis_col = diagnosis_col or (headers[1] if len(headers) > 1 else 'diagnosis')
+            treatment_col = treatment_col or (headers[2] if len(headers) > 2 else 'treatment')
         
-        for row in reader:
-            symptoms = row.get('patient_symptoms', '')
-            diagnosis = row.get('diagnosis', '')
-            treatment = row.get('treatment', '')
+        print(f"Auto-mapped CSV columns:\n - Symptoms: '{symptoms_col}'\n - Diagnosis: '{diagnosis_col}'\n - Treatment: '{treatment_col}'\n")
+
+        # Rewind and parse rows
+        csv_file.seek(0)
+        dict_reader = csv.DictReader(csv_file)
+        
+        for row in dict_reader:
+            symptoms = row.get(symptoms_col, '')
+            diagnosis = row.get(diagnosis_col, '')
+            treatment = row.get(treatment_col, '')
             
             # Skip empty rows
-            if not symptoms:
+            if not symptoms or not symptoms.strip():
                 continue
                 
             # Create a conversational interaction for the AI to learn
