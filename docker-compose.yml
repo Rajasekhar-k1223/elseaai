@@ -160,8 +160,8 @@ services:
     ports:
       - "8000:8000"
     environment:
-      - MYSQL_URL=mysql+aiomysql://elsea:change_me_to_a_strong_password@mysql:3306/elsea_db
-      - MONGO_URL=mongodb://elsea:change_me_to_a_strong_password@mongodb:27017/elsea_db?authSource=admin
+      - MYSQL_URL=${MYSQL_URL:-mysql+aiomysql://elsea:elseapassword@mysql:3306/elsea_db}
+      - MONGO_URL=${MONGO_URL:-mongodb://elsea:elseapassword@mongodb:27017/elsea_db?authSource=admin}
       - QDRANT_URL=http://qdrant:6333
       - REDIS_URL=redis://redis:6379/0
       - OLLAMA_URL=http://ollama:11434
@@ -193,8 +193,8 @@ services:
       dockerfile: Dockerfile
     command: celery -A app.worker.celery_app worker --loglevel=info
     environment:
-      - MYSQL_URL=${MYSQL_URL:-mysql+aiomysql://elsea:change_me_to_a_strong_password@mysql:3306/elsea_db}
-      - MONGO_URL=${MONGO_URL:-mongodb://elsea:change_me_to_a_strong_password@mongodb:27017/elsea_db?authSource=admin}
+      - MYSQL_URL=${MYSQL_URL:-mysql+aiomysql://elsea:elseapassword@mysql:3306/elsea_db}
+      - MONGO_URL=${MONGO_URL:-mongodb://elsea:elseapassword@mongodb:27017/elsea_db?authSource=admin}
       - QDRANT_URL=${QDRANT_URL:-http://qdrant:6333}
       - REDIS_URL=${REDIS_URL:-redis://redis:6379/0}
       - OLLAMA_URL=${OLLAMA_URL:-http://ollama:11434}
@@ -222,7 +222,7 @@ services:
     environment:
       MYSQL_DATABASE: elsea_db
       MYSQL_USER: elsea
-      MYSQL_PASSWORD: ${MYSQL_PASSWORD:-change_me_to_a_strong_password}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD:-elseapassword}
       MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-change_me_to_a_strong_root_password}
     ports:
       - "3306:3306"
@@ -241,14 +241,14 @@ services:
     restart: always
     environment:
       MONGO_INITDB_ROOT_USERNAME: elsea
-      MONGO_INITDB_ROOT_PASSWORD: ${MONGO_INITDB_ROOT_PASSWORD:-change_me_to_a_strong_password}
+      MONGO_INITDB_ROOT_PASSWORD: ${MONGO_INITDB_ROOT_PASSWORD:-elseapassword}
       MONGO_INITDB_DATABASE: elsea_db
     volumes:
       - mongo_data:/data/db
     networks:
       - elsea_network
     healthcheck:
-      test: ["CMD-SHELL", "mongosh --username elsea --password $${MONGO_INITDB_ROOT_PASSWORD} --authenticationDatabase admin --eval 'db.adminCommand(\"ping\")' || exit 1"]
+      test: ["CMD-SHELL", "mongosh --eval 'db.adminCommand(\"ping\")' || exit 1"]
       interval: 10s
       timeout: 10s
       retries: 10
