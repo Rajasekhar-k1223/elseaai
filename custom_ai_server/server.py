@@ -7,6 +7,10 @@ from sse_starlette.sse import EventSourceResponse
 from pydantic import BaseModel
 from typing import List, Optional
 import time
+import sys
+sys.path.append(r"d:\sentinelx\sentinelx-sdk-python")
+from sentinelx.client import SentinelXClient
+from sentinelx.models import Heartbeat
 
 try:
     from llama_cpp import Llama
@@ -43,6 +47,37 @@ except Exception as e:
     print(f"Failed to load model: {e}")
     print(f"Please ensure {MODEL_PATH} exists in this directory. Run download_model.py first!")
 
+# --- SentinelX Mesh Integration ---
+ISOLATION_MODE = False
+
+sentinel_client = SentinelXClient(
+    base_url="http://localhost:8000",
+    project_id="mi_ai_node",
+    api_key="mock_secret_key_789"
+)
+
+async def handle_sentinel_commands(command: str, payload: dict):
+    global ISOLATION_MODE
+    if command == "GLOBAL_ISOLATION":
+        print(f"🚨 SENTINELX C2 OVERRIDE: {payload.get('reason', 'Unknown threat')}")
+        print("🚨 LOCKING DOWN AI ENDPOINTS.")
+        ISOLATION_MODE = True
+
+async def heartbeat_loop():
+    while True:
+        await sentinel_client.send_heartbeat(Heartbeat(status="healthy", active_connections=1))
+        await asyncio.sleep(30)
+
+@app.on_event("startup")
+async def register_with_mesh():
+    print("Registering MI-AI node with SentinelX Mesh...")
+    if await sentinel_client.register_project() and await sentinel_client.authenticate():
+        print("Successfully connected to SentinelX Mesh.")
+        asyncio.create_task(sentinel_client.connect_websocket(handle_sentinel_commands))
+        asyncio.create_task(heartbeat_loop())
+    else:
+        print("Failed to connect to SentinelX Mesh. Running standalone.")
+
 class ChatMessage(BaseModel):
     role: str
     content: str
@@ -58,8 +93,17 @@ class ChatCompletionRequest(BaseModel):
 def health():
     return {"status": "ok", "model": MODEL_PATH}
 
+from fastapi.responses import JSONResponse
+
 @app.post("/v1/chat/completions")
 async def chat_completions(request: Request, body: ChatCompletionRequest):
+    global ISOLATION_MODE
+    if ISOLATION_MODE:
+        return JSONResponse(
+            status_code=403, 
+            content={"error": "MI-AI has been isolated by SentinelX due to an active network threat."}
+        )
+
     # Convert messages to ChatML format for Qwen
     formatted_messages = [{"role": m.role, "content": m.content} for m in body.messages]
     
